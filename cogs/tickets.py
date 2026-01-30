@@ -68,20 +68,39 @@ class TicketModal(discord.ui.Modal, title="🔐 Cerrar Ticket"):
             admin_role_id = 1466585864929804339
             admin_role = ticket_channel.guild.get_role(admin_role_id)
             
-            for target, overwrite in ticket_channel.overwrites.items():
-                if isinstance(target, discord.Member):
-                    # No bloquear al creador
-                    if target.id != creator_id:
-                        await ticket_channel.set_permissions(target, send_messages=False)
-                elif isinstance(target, discord.Role):
-                    # No bloquear el rol de admin
-                    if target.id != admin_role_id:
-                        await ticket_channel.set_permissions(target, send_messages=False)
-
-            # Bloquear @everyone
+            # Obtener el miembro del creador
+            try:
+                creator_member = await ticket_channel.guild.fetch_member(creator_id)
+            except:
+                creator_member = None
+            
+            # Bloquear a todos los roles excepto el rol de admin
+            for role in ticket_channel.guild.roles:
+                if role.id != admin_role_id and role != ticket_channel.guild.default_role:
+                    await ticket_channel.set_permissions(role, send_messages=False)
+            
+            # Bloquear a @everyone
             await ticket_channel.set_permissions(
                 ticket_channel.guild.default_role, send_messages=False
             )
+            
+            # Asegurar explícitamente que el rol de admin puede escribir
+            if admin_role:
+                await ticket_channel.set_permissions(
+                    admin_role, 
+                    send_messages=True, 
+                    read_message_history=True, 
+                    view_channel=True
+                )
+            
+            # Asegurar explícitamente que el creador puede escribir
+            if creator_member:
+                await ticket_channel.set_permissions(
+                    creator_member, 
+                    send_messages=True, 
+                    read_message_history=True, 
+                    view_channel=True
+                )
 
             # Responder al usuario
             await interaction.response.send_message(
