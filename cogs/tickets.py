@@ -77,29 +77,29 @@ class TicketModal(discord.ui.Modal, title="🔐 Cerrar Ticket"):
             # Bloquear a todos los roles excepto el rol de admin
             for role in ticket_channel.guild.roles:
                 if role.id != admin_role_id and role != ticket_channel.guild.default_role:
-                    await ticket_channel.set_permissions(role, send_messages=False)
+                    await ticket_channel.set_permissions(role, view_channel=False, send_messages=False)
             
             # Bloquear a @everyone
             await ticket_channel.set_permissions(
-                ticket_channel.guild.default_role, send_messages=False
+                ticket_channel.guild.default_role, view_channel=False, send_messages=False
             )
             
-            # Asegurar explícitamente que el rol de admin puede escribir
+            # Asegurar explícitamente que el rol de admin puede ver y escribir
             if admin_role:
                 await ticket_channel.set_permissions(
                     admin_role, 
+                    view_channel=True,
                     send_messages=True, 
-                    read_message_history=True, 
-                    view_channel=True
+                    read_message_history=True
                 )
             
-            # Asegurar explícitamente que el creador puede escribir
+            # Asegurar explícitamente que el creador puede ver y escribir
             if creator_member:
                 await ticket_channel.set_permissions(
                     creator_member, 
+                    view_channel=True,
                     send_messages=True, 
-                    read_message_history=True, 
-                    view_channel=True
+                    read_message_history=True
                 )
 
             # Responder al usuario
