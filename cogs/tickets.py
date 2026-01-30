@@ -64,11 +64,19 @@ class TicketModal(discord.ui.Modal, title="🔐 Cerrar Ticket"):
             await ticket_channel.edit(topic=new_topic)
 
             # Bloquear el canal para que nadie pueda escribir
-            # Obtener los permisos del canal
+            # EXCEPTO el creador y los admins
+            admin_role_id = 1466585864929804339
+            admin_role = ticket_channel.guild.get_role(admin_role_id)
+            
             for target, overwrite in ticket_channel.overwrites.items():
-                if isinstance(target, discord.Member) or isinstance(target, discord.Role):
-                    # No modificar permisos existentes, solo agregar restricción de enviar mensajes
-                    await ticket_channel.set_permissions(target, send_messages=False)
+                if isinstance(target, discord.Member):
+                    # No bloquear al creador
+                    if target.id != creator_id:
+                        await ticket_channel.set_permissions(target, send_messages=False)
+                elif isinstance(target, discord.Role):
+                    # No bloquear el rol de admin
+                    if target.id != admin_role_id:
+                        await ticket_channel.set_permissions(target, send_messages=False)
 
             # Bloquear @everyone
             await ticket_channel.set_permissions(
@@ -229,9 +237,14 @@ class TicketSelectView(discord.ui.View):
             )
 
         elif selected_value == "close_ticket":
-            if not is_admin:
+            # Solo admins con el rol específico pueden cerrar tickets
+            admin_role_id = 1466585864929804339
+            admin_role = interaction.guild.get_role(admin_role_id)
+            has_admin_role = admin_role and admin_role in interaction.user.roles
+            
+            if not has_admin_role:
                 await interaction.response.send_message(
-                    "❌ Solo los admins y el creador del ticket pueden cerrarlo.",
+                    "❌ Solo los admins pueden cerrar tickets.",
                     ephemeral=True,
                 )
                 return
