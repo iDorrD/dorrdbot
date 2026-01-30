@@ -22,7 +22,8 @@ def home():
     return "✅ Bot activo", 200
 
 def run_flask():
-    app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
 @bot.event
 async def on_ready():
@@ -80,7 +81,8 @@ if __name__ == "__main__":
     # Iniciar servidor Flask en un thread ANTES que el bot
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
-    print("✅ Servidor Flask iniciado en puerto 8080")
+    port = int(os.environ.get('PORT', 8080))
+    print(f"✅ Servidor Flask iniciado en puerto {port}")
     # Pequeña pausa para que Flask se inicialice
     import time
     time.sleep(1)
