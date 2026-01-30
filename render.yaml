@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: dorrdbot
+    runtime: python
+    runtimeVersion: 3.12.7
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
