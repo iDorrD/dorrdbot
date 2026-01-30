@@ -63,42 +63,37 @@ class TicketModal(discord.ui.Modal, title="🔐 Cerrar Ticket"):
             new_topic = f"ID del ticket: {ticket_id} | Estado: :red_square: Cerrado | Reclamado: :white_check_mark: Sí{claimed_info} | creator_id: {creator_id}"
             await ticket_channel.edit(topic=new_topic)
 
-            # Bloquear el canal para que nadie pueda escribir
-            # EXCEPTO el creador y los admins
+            # Bloquear el canal cuando está cerrado
+            # - El creador puede VER pero NO escribir
+            # - Los admins pueden ver y escribir
+            # - @everyone está bloqueado
             admin_role_id = 1466585864929804339
             admin_role = ticket_channel.guild.get_role(admin_role_id)
-            
-            # Obtener el miembro del creador
-            try:
-                creator_member = await ticket_channel.guild.fetch_member(creator_id)
-            except:
-                creator_member = None
-            
-            # Bloquear a todos los roles excepto el rol de admin
-            for role in ticket_channel.guild.roles:
-                if role.id != admin_role_id and role != ticket_channel.guild.default_role:
-                    await ticket_channel.set_permissions(role, view_channel=False, send_messages=False)
             
             # Bloquear a @everyone
             await ticket_channel.set_permissions(
                 ticket_channel.guild.default_role, view_channel=False, send_messages=False
             )
             
-            # Asegurar explícitamente que el rol de admin puede ver y escribir
+            # El creador puede ver pero NO escribir
+            if creator_id:
+                try:
+                    creator_member = await ticket_channel.guild.fetch_member(creator_id)
+                    await ticket_channel.set_permissions(
+                        creator_member,
+                        view_channel=True,
+                        send_messages=False,
+                        read_message_history=True
+                    )
+                except:
+                    pass
+            
+            # Los admins pueden ver y escribir
             if admin_role:
                 await ticket_channel.set_permissions(
-                    admin_role, 
+                    admin_role,
                     view_channel=True,
-                    send_messages=True, 
-                    read_message_history=True
-                )
-            
-            # Asegurar explícitamente que el creador puede ver y escribir
-            if creator_member:
-                await ticket_channel.set_permissions(
-                    creator_member, 
-                    view_channel=True,
-                    send_messages=True, 
+                    send_messages=True,
                     read_message_history=True
                 )
 
@@ -351,25 +346,27 @@ class TicketCreateView(discord.ui.View):
             await ticket_channel.edit(topic=ticket_info)
 
             # Establecer los permisos del canal
-            # Denegar acceso a @everyone
+            admin_role_id = 1466585864929804339
+            admin_role = guild.get_role(admin_role_id)
+            
+            # Bloquear @everyone para ver el ticket
             await ticket_channel.set_permissions(
-                guild.default_role, view_channel=False
+                guild.default_role, view_channel=False, send_messages=False
             )
 
-            # Permitir acceso al creador del ticket
+            # Permitir acceso al creador del ticket (ver y escribir)
             await ticket_channel.set_permissions(
                 user, view_channel=True, send_messages=True, read_message_history=True
             )
 
-            # Permitir acceso a los admins
-            for member in guild.members:
-                if member.guild_permissions.administrator and member != user:
-                    await ticket_channel.set_permissions(
-                        member,
-                        view_channel=True,
-                        send_messages=True,
-                        read_message_history=True,
-                    )
+            # Permitir acceso al rol de admin (ver y escribir)
+            if admin_role:
+                await ticket_channel.set_permissions(
+                    admin_role,
+                    view_channel=True,
+                    send_messages=True,
+                    read_message_history=True,
+                )
 
             # Enviar un mensaje mencionando al usuario
             welcome_embed = discord.Embed(
