@@ -22,7 +22,8 @@ def home():
     return "✅ Bot activo", 200
 
 def run_flask():
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8080, debug=False)
+    print("✅ Servidor Flask iniciado en puerto 8080")
 
 @bot.event
 async def on_ready():
