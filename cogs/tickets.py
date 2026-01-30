@@ -406,43 +406,40 @@ class Tickets(commands.Cog):
     async def on_ready(self):
         """Se ejecuta cuando el bot está listo"""
         print("✅ Cog de Tickets cargado")
-
-    @app_commands.command(name="setup_tickets", description="Configura el sistema de tickets (Solo admins)")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def setup_tickets(self, interaction: discord.Interaction) -> None:
-        """Comando para configurar el webhook de tickets"""
+        
+        # Obtener el canal de tickets
+        channel = self.bot.get_channel(TICKETS_CHANNEL_ID)
+        
+        if not channel:
+            print(f"❌ Canal de tickets {TICKETS_CHANNEL_ID} no encontrado")
+            return
+        
+        # Limpiar todos los mensajes del canal
         try:
-            # Obtener el canal de tickets
-            tickets_channel = interaction.client.get_channel(TICKETS_CHANNEL_ID)
-            if not tickets_channel:
-                await interaction.response.send_message(
-                    f"❌ No se pudo encontrar el canal con ID {TICKETS_CHANNEL_ID}.",
-                    ephemeral=True,
-                )
-                return
-
-            # Crear el embed del webhook
-            embed = discord.Embed(
-                title="✉️ ¿Necesitas ayuda?",
-                description="En este canal podrás abrir un ticket para hablar directamente con el staff de DorrD, quienes te ayudarán con los problemas o dudas que tengas.",
-                color=WEBHOOK_COLOR,
-            )
-
-            # Enviar el mensaje con el botón
-            view = TicketCreateView(self.bot)
-            await tickets_channel.send(embed=embed, view=view)
-
-            # Responder al usuario
-            await interaction.response.send_message(
-                "✅ El sistema de tickets ha sido configurado exitosamente.",
-                ephemeral=True,
-            )
+            async for message in channel.history(limit=None):
+                await message.delete()
+            print(f"✅ Canal {TICKETS_CHANNEL_ID} limpiado")
+        except discord.Forbidden:
+            print(f"❌ No tengo permisos para eliminar mensajes en el canal {TICKETS_CHANNEL_ID}")
         except Exception as e:
-            print(f"❌ Error al configurar los tickets: {e}")
-            await interaction.response.send_message(
-                "❌ Hubo un error al configurar los tickets.",
-                ephemeral=True,
-            )
+            print(f"❌ Error limpiando el canal: {e}")
+        
+        # Crear y enviar el embed con el botón de crear ticket
+        embed = discord.Embed(
+            title="✉️ ¿Necesitas ayuda?",
+            description="En este canal podrás abrir un ticket para hablar directamente con el staff de DorrD, quienes te ayudarán con los problemas o dudas que tengas.",
+            color=WEBHOOK_COLOR,
+        )
+        
+        view = TicketCreateView(self.bot)
+        
+        try:
+            await channel.send(embed=embed, view=view)
+            print(f"✅ Sistema de tickets enviado al canal {TICKETS_CHANNEL_ID}")
+        except discord.Forbidden:
+            print(f"❌ No tengo permisos para enviar mensajes en el canal {TICKETS_CHANNEL_ID}")
+        except Exception as e:
+            print(f"❌ Error al enviar el sistema de tickets: {e}")
 
 
 async def setup(bot: commands.Bot) -> None:
