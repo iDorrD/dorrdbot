@@ -41,7 +41,7 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.watching,
-            name="a DorrD"
+            name="Moderando DorrD Club 💜"
         )
     )
 
