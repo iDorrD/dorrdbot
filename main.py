@@ -3,6 +3,8 @@ from discord.ext import commands
 import os
 from config.config import TOKEN, BOT_PREFIX, BOT_NAME
 from events.welcome import setup_welcome_event
+from flask import Flask
+import threading
 
 # Crear el bot con intents
 intents = discord.Intents.default()
@@ -11,6 +13,16 @@ intents.members = True  # Importante para recibir eventos de miembros
 intents.voice_states = True  # Importante para recibir eventos de voz
 
 bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents, help_command=None)
+
+# Servidor Flask para mantener el bot despierto
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "✅ Bot activo", 200
+
+def run_flask():
+    app.run(host='0.0.0.0', port=8080)
 
 @bot.event
 async def on_ready():
@@ -65,4 +77,8 @@ async def main():
 
 if __name__ == "__main__":
     import asyncio
+    # Iniciar servidor Flask en un thread
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    # Iniciar el bot
     asyncio.run(main())
