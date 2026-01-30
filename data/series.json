@@ -7,6 +7,14 @@
       "unlisted": false,
       "pro": false,
       "id_rol": "1466830707107041310"
+    },
+    {
+      "nombre": "Hardcore",
+      "descripcion": "Vive la experiencia hardcore en Minecraft, donde la muerte es permanente.",
+      "privado": true,
+      "unlisted": false,
+      "pro": false,
+      "id_rol": "1466940004289744896"
     }
   ]
 }
