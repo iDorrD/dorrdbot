@@ -6,6 +6,10 @@ from events.welcome import setup_welcome_event
 from flask import Flask
 import threading
 
+# Validar que el TOKEN esté configurado
+if not TOKEN:
+    raise ValueError("❌ Error: DISCORD_TOKEN no está configurado en las variables de entorno")
+
 # Crear el bot con intents
 intents = discord.Intents.default()
 intents.message_content = True
