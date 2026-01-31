@@ -211,40 +211,20 @@ class Series(commands.Cog):
         except Exception as e:
             print(f"❌ Error limpiando el canal: {e}")
         
-        # Crear y enviar el embed con el selector
+        # Crear y enviar embed rojo indicando que el sistema se ha trasladado
         embed = discord.Embed(
-            title="📺 Series Disponibles",
-            description="Selecciona una serie para obtener acceso a su contenido privado.",
-            color=WEBHOOK_COLOR
+            title="⚠️ Sistema de Series Deshabilitado",
+            description="El sistema de series se ha transladado a otro sitio. Esperen noticias oficiales.",
+            color=discord.Color.red()
         )
         
-        # Agregar información sobre series privadas y PRO
-        series_privadas = [s for s in self.series_data["series"] if s.get("privado", False)]
-        series_pro = [s for s in self.series_data["series"] if s.get("pro", False)]
-        
-        if series_privadas:
-            embed.add_field(
-                name="🔒 Series Privadas",
-                value="Solo los administradores pueden seleccionar estas series.",
-                inline=False
-            )
-        
-        if series_pro:
-            embed.add_field(
-                name="<:pro:1466831467836604469> Series PRO",
-                value=f"Necesitas el rol <@&{PRO_ROLE_ID}> para acceder a estas series.",
-                inline=False
-            )
-        
-        view = SeriesView(self.bot, self.series_data, None)
-        
         try:
-            await channel.send(embed=embed, view=view)
-            print(f"✅ Sistema de series enviado al canal {SERIES_CHANNEL_ID}")
+            await channel.send(embed=embed)
+            print(f"✅ Mensaje de deshabilitación enviado al canal {SERIES_CHANNEL_ID}")
         except discord.Forbidden:
             print(f"❌ No tengo permisos para enviar mensajes en el canal {SERIES_CHANNEL_ID}")
         except Exception as e:
-            print(f"❌ Error al enviar el sistema de series: {e}")
+            print(f"❌ Error al enviar el mensaje: {e}")
 
 
 async def setup(bot):
