@@ -116,10 +116,11 @@ class EditChannelLimitModal(discord.ui.Modal, title="👥 Establecer límite de 
 class ChannelConfigView(discord.ui.View):
     """Vista con botones para configurar el canal temporal"""
     
-    def __init__(self, bot, guild_id, timeout=None):
+    def __init__(self, bot, guild_id, temp_channels, timeout=None):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.guild_id = guild_id
+        self.temp_channels = temp_channels
         self.channel_locked = {}
     
     @discord.ui.button(label="✏️ Editar nombre", style=discord.ButtonStyle.primary)
@@ -153,6 +154,11 @@ class ChannelConfigView(discord.ui.View):
                 return
             
             channel = member.voice.channel
+            
+            # Obtener el ID del dueño del canal
+            owner_id = self.temp_channels.get(channel.id)
+            owner = guild.get_member(owner_id) if owner_id else None
+            
             # Obtener el rol @everyone
             everyone_role = guild.default_role
             
@@ -160,24 +166,39 @@ class ChannelConfigView(discord.ui.View):
             current_permissions = channel.permissions_for(everyone_role)
             
             if current_permissions.connect:
-                # Bloquear el canal
+                # Bloquear el canal: denegar conexión a @everyone
                 await channel.set_permissions(
                     everyone_role,
                     connect=False,
                     reason="Canal bloqueado por el propietario"
                 )
+                
+                # Permitir al dueño conectarse sin restricciones
+                if owner:
+                    await channel.set_permissions(
+                        owner,
+                        connect=True,
+                        view_channel=True,
+                        reason="Permisos de propietario: siempre puede conectarse"
+                    )
+                
                 await interaction.response.send_message(
-                    "🔒 El canal ha sido **bloqueado**. Solo miembros actuales pueden escribir.",
+                    "🔒 El canal ha sido **bloqueado**. Solo miembros actuales pueden entrar (tú siempre podrás entrar).",
                     ephemeral=True
                 )
                 self.channel_locked[channel.id] = True
             else:
-                # Desbloquear el canal
+                # Desbloquear el canal: permitir conexión a @everyone
                 await channel.set_permissions(
                     everyone_role,
                     connect=True,
                     reason="Canal desbloqueado por el propietario"
                 )
+                
+                # Remover permisos específicos del dueño para que vuelva a usar los de @everyone
+                if owner:
+                    await channel.delete_permissions(owner, reason="Canal desbloqueado: restaurando permisos")
+                
                 await interaction.response.send_message(
                     "🔓 El canal ha sido **desbloqueado**. Todos pueden conectarse nuevamente.",
                     ephemeral=True
@@ -197,6 +218,7 @@ class TempVoice(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         # Diccionario para rastrear qué canales temporales pertenecen a qué usuario
+        # Estructura: {channel_id: owner_id}
         self.temp_channels = {}
 
     @commands.Cog.listener()
@@ -215,7 +237,7 @@ class TempVoice(commands.Cog):
         # Caso 2: Usuario sale de un canal temporal (verificar si está vacío)
         if before.channel:
             # Verificar si es un canal temporal (está en nuestro diccionario)
-            if before.channel.id in self.temp_channels.values():
+            if before.channel.id in self.temp_channels:
                 # Si el canal no tiene usuarios, eliminarlo
                 if len(before.channel.members) == 0:
                     await self.delete_temp_channel(before.channel)
@@ -238,8 +260,16 @@ class TempVoice(commands.Cog):
                 reason=f"Canal temporal creado para {member.name}"
             )
             
-            # Rastrear este canal como temporal
-            self.temp_channels[member.id] = temp_channel.id
+            # Rastrear este canal como temporal con su dueño
+            # Estructura: {channel_id: owner_id}
+            self.temp_channels[temp_channel.id] = member.id
+            
+            # Dar permisos especiales al dueño: puede conectarse aunque el canal esté bloqueado o lleno
+            await temp_channel.set_permissions(
+                member,
+                connect=True,
+                reason="Permisos de propietario del canal"
+            )
             
             # Mover al usuario al canal creado
             await member.move_to(temp_channel)
@@ -278,8 +308,8 @@ class TempVoice(commands.Cog):
             )
             embed.set_footer(text="Los botones están disponibles mientras estés en el canal")
             
-            # Crear la vista con el bot y el guild_id
-            config_view = ChannelConfigView(self.bot, member.guild.id)
+            # Crear la vista con el bot, el guild_id y el diccionario de canales temporales
+            config_view = ChannelConfigView(self.bot, member.guild.id, self.temp_channels)
             
             # Enviar el mensaje privado con los botones
             await member.send(embed=embed, view=config_view)
@@ -290,11 +320,9 @@ class TempVoice(commands.Cog):
     async def delete_temp_channel(self, channel):
         """Elimina un canal temporal vacío"""
         try:
-            # Buscar y eliminar la referencia en nuestro diccionario
-            for user_id, channel_id in list(self.temp_channels.items()):
-                if channel_id == channel.id:
-                    del self.temp_channels[user_id]
-                    break
+            # Eliminar la referencia del diccionario
+            if channel.id in self.temp_channels:
+                del self.temp_channels[channel.id]
             
             # Eliminar el canal
             await channel.delete(reason="Canal temporal vacío eliminado automáticamente")
