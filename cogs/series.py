@@ -192,29 +192,7 @@ class Series(commands.Cog):
             print(f"❌ Error decodificando {self.series_file}")
             self.series_data = {"series": []}
     
-    @commands.Cog.listener()
-    async def on_ready(self):
-        """Se ejecuta cuando el bot está listo"""
-        channel = self.bot.get_channel(SERIES_CHANNEL_ID)
-        
-        if not channel:
-            print(f"❌ Canal de series {SERIES_CHANNEL_ID} no encontrado")
-            return
-        
-        # Crear y enviar embed rojo indicando que el sistema se ha trasladado
-        embed = discord.Embed(
-            title="⚠️ Sistema de Series Deshabilitado",
-            description="El sistema de series se ha transladado a otro sitio. Esperen noticias oficiales.",
-            color=discord.Color.red()
-        )
-        
-        try:
-            await channel.send(embed=embed)
-            print(f"✅ Mensaje de deshabilitación enviado al canal {SERIES_CHANNEL_ID}")
-        except discord.Forbidden:
-            print(f"❌ No tengo permisos para enviar mensajes en el canal {SERIES_CHANNEL_ID}")
-        except Exception as e:
-            print(f"❌ Error al enviar el mensaje: {e}")
+
 
 
 async def setup(bot):
