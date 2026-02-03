@@ -201,16 +201,6 @@ class Series(commands.Cog):
             print(f"❌ Canal de series {SERIES_CHANNEL_ID} no encontrado")
             return
         
-        # Limpiar todos los mensajes del canal
-        try:
-            async for message in channel.history(limit=None):
-                await message.delete()
-            print(f"✅ Canal {SERIES_CHANNEL_ID} limpiado")
-        except discord.Forbidden:
-            print(f"❌ No tengo permisos para eliminar mensajes en el canal {SERIES_CHANNEL_ID}")
-        except Exception as e:
-            print(f"❌ Error limpiando el canal: {e}")
-        
         # Crear y enviar embed rojo indicando que el sistema se ha trasladado
         embed = discord.Embed(
             title="⚠️ Sistema de Series Deshabilitado",
