@@ -194,7 +194,6 @@ class Series(commands.Cog):
     
 
 
-
 async def setup(bot):
     """Función requerida por Discord.py para cargar el cog"""
     await bot.add_cog(Series(bot))
